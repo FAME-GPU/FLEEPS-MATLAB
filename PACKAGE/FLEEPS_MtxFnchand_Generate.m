@@ -58,9 +58,18 @@ function [ FLEEPS_mtx, FLEEPS_fnchand ] = FLEEPS_MtxFnchand_Generate(wave_vec, P
     b = ones(3 * N, 1);
     [FLEEPS_mtx_test.CG_cpu_time, FLEEPS_mtx_test.CG_err, FLEEPS_mtx_test.CG_iter] = CG_iter( b, FLEEPS_fnchand_test.Qs_invS,  FLEEPS_fnchand_test.S_Q,  FLEEPS_fnchand_test.PLP);
     FLEEPS_mtx_test.CG_cpu_time = cputime - t_1;
-    [FLEEPS_mtx_test.amg_CG_cpu_time, FLEEPS_mtx_test.multi_x, FLEEPS_mtx_test.multi_info] = amg(FLEEPS_fnchand_test.A_without_R, FLEEPS_fnchand_test.Qs_invS,A,b);
+    
+   start_agmg_pre= tic;
+   agmg(A,b,1,[], [], [], [], 1); 
+   FLEEPS_mtx_test.time_agmg_pre = toc( start_agmg_pre);
 
-    LS_info = [FLEEPS_mtx_test.multi_info.itStep, FLEEPS_mtx_test.multi_info.solverTime, FLEEPS_mtx_test.amg_CG_cpu_time,  FLEEPS_mtx_test.CG_iter, FLEEPS_mtx_test.CG_cpu_time, time_svd];
+   start_agmg= tic;
+   [~,~,~,FLEEPS_mtx_test.iter_agmg, ~]=agmg(A,b,1,Par_linsys.tolerence, Par_linsys.itmax, 1, [], 100);
+   FLEEPS_mtx_test.FLEEPS_mtx_test.time_agmg = toc( start_agmg);
+
+   FLEEPS_mtx_test.agmg_CG_cpu_time = FLEEPS_mtx_test.FLEEPS_mtx_test.time_agmg - FLEEPS_mtx_test.time_agmg_pre;
+
+    LS_info = [FLEEPS_mtx_test.iter_agmg, FLEEPS_mtx_test.agmg_CG_cpu_time, FLEEPS_mtx_test.time_agmg_pre,  FLEEPS_mtx_test.CG_iter, FLEEPS_mtx_test.CG_cpu_time, time_svd];
     writematrix(LS_info, 'LS_info.txt');
 end
 
