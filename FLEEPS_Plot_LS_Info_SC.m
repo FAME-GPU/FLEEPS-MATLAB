@@ -16,13 +16,11 @@ mesh = (20:10: 20 + 10*(num-1));
 
 load DATA/ConditionNumbers_SC.mat
 
-amg.iter = data(:,1); amg.ful_time = data(:,2); amg.CG_time = data(:,3);
+agmg.iter = data(:,1); agmg.CG_time= data(:,2); agmg.pre = data(:,3);
 
-Wsvd.iter = data(:,4); Wsvd.ful_time = data(:,5); Wsvd.pre = data(:,6); Wsvd.CG = Wsvd.ful_time - Wsvd.pre;
+Wsvd.iter = data(:,4); Wsvd.CG = data(:,5); Wsvd.pre = data(:,6); 
 
-svd.iter = data(:,7); svd.ful_time = data(:,8); svd.pre = data(:,9); svd.CG = svd.ful_time - svd.pre;
-
-amg.pre = amg.ful_time - amg.CG_time;
+svd.iter = data(:,7); svd.CG = data(:,8); svd.pre = data(:,9); 
 
 matrix_size = mesh;
 % matrix_size = 3*mesh.^3;
@@ -30,14 +28,14 @@ matrix_size = mesh;
 %% Plot1: pre
 
 % plot1: pre
-semilogy(matrix_size, amg.pre,':s','Color','black',  'LineWidth',2);
+semilogy(matrix_size, agmg.pre,':s','Color','black',  'LineWidth',2);
 hold on 
 semilogy(matrix_size, Wsvd.pre,':o','Color','red', 'LineWidth',2);
 hold on 
 semilogy(matrix_size, svd.pre,':d','Color','blue', 'LineWidth',2);
 hold on 
 
-semilogy(matrix_size, amg.CG_time,'-s','Color','black', 'LineWidth',2, 'MarkerFaceColor', 'black');
+semilogy(matrix_size, agmg.CG_time,'-s','Color','black', 'LineWidth',2, 'MarkerFaceColor', 'black');
 hold on 
 semilogy(matrix_size, Wsvd.CG,'-o','Color','red', 'LineWidth',2, 'MarkerFaceColor','red');
 hold on 
@@ -46,7 +44,7 @@ hold on
 
 xlabel('$n_1$','FontSize',16,'Interpreter','latex'); 
 ylabel('time(sec.)','FontSize',14);
-legend('construct AMG', 'construct WSVD', 'construct SVD', 'AMG-CG', 'WSVD-CG', 'SVD-CG', 'Location','southeast');
+legend('construct AGMG', 'construct WSVD', 'construct SVD', 'AGMG-CG', 'WSVD-CG', 'SVD-CG', 'Location','southeast');
 
 grid on
 box off
@@ -65,7 +63,7 @@ figure
 % plot2: iter
 clf reset
 h1 = axes('Position', [0.12 0.12 0.82 0.82]);
-plot(matrix_size, amg.iter,'--s','Color','black',  'LineWidth',2, 'MarkerFaceColor', 'black');
+plot(matrix_size, agmg.iter,'--s','Color','black',  'LineWidth',2, 'MarkerFaceColor', 'black');
 hold on 
 plot(matrix_size, Wsvd.iter,'--o','Color','red', 'LineWidth',2, 'MarkerFaceColor','red');
 hold on 
@@ -74,7 +72,7 @@ hold on
 
 xlabel('$n_1$','FontSize',16,'Interpreter','latex'); 
 ylabel('iteration number','FontSize',14);
-legend('AMG-CG', 'WSVD-CG', 'SVD-CG', 'Location','northwest');
+legend('AGMG-CG', 'WSVD-CG', 'SVD-CG', 'Location','northwest');
 
 grid on
 box off

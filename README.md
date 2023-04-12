@@ -49,4 +49,4 @@ Popt.FLEEPS_option.core_type: default.
 If you have any questions, please let us know, we are willing to help you.  
 School of Mathematics, Southeast University, Nanjing, China.  
 Xing-Long Lyu: lxl_math@seu.edu.cn  
-Hao-Nan Yang: hn_yang@seu.edu.cn
+Hao-Nan Yang: hn_yang@seu.edu.cn  
