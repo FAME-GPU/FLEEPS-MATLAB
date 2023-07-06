@@ -71,11 +71,11 @@ end
 function path_string = default_path(lattice_type, lattice_constant, lattice_vec_a)
     switch lattice_type
         case 'simple_cubic'   
-            path_string = 'GXMGRX|MR';
+            path_string = 'GXMGRX'; %'GXMGRX|MR';
         case 'face_centered_cubic'
-            path_string = 'GXWKGLUWLK|UX';
+            path_string = 'GXWKGLUWLK'; %'GXWKGLUWLK|UX';
         case 'hexagonal'    
-            path_string = 'GMKGALHA|LM|KH';
+            path_string = 'GMKGALHA'; %'GMKGALHA|LM|KH';
     end
 end
 

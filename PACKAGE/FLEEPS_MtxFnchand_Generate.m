@@ -1,5 +1,7 @@
 function [ FLEEPS_mtx, FLEEPS_fnchand ] = FLEEPS_MtxFnchand_Generate(wave_vec, Par_mesh, Par_lattice, Par_material, Par_linsys, FLEEPS_option)
     
+    global LS_info_SVD LS_info_WSVD CD
+    
     % Construct material-dependent matrices
     switch FLEEPS_option.discrete_method
         case 'staggered_grid'
@@ -8,7 +10,7 @@ function [ FLEEPS_mtx, FLEEPS_fnchand ] = FLEEPS_MtxFnchand_Generate(wave_vec, P
                 FLEEPS_mtx.B = FLEEPS_Matrix_B_Isotropic_phononic( Par_mesh, Par_material);  % for phononic crystal 
                 FLEEPS_mtx.L = FLEEPS_Matrix_L(FLEEPS_mtx.B.B_lambda, FLEEPS_mtx.B.B_mu, FLEEPS_mtx.B.B_mu_face_center);  % extra: construct  L(lambda, mu)
                 FLEEPS_mtx.R = FLEEPS_Matrix_R_Isotropic_phononic( Par_mesh, Par_material);
-                fprintf('The Matrix R has been formed\n')  
+                % fprintf('The Matrix R has been formed\n')  
             end
     end
  
@@ -18,9 +20,13 @@ function [ FLEEPS_mtx, FLEEPS_fnchand ] = FLEEPS_MtxFnchand_Generate(wave_vec, P
     [ FLEEPS_mtx.Lambdas ] = ...
         FLEEPS_Matrix_Lambdas( wave_vec, Par_mesh.grid_num, Par_mesh.mesh_len, Par_lattice.lattice_type, Par_lattice.lattice_constant_comp, Par_lattice.lattice_vec_a_comp );
 
+    
+%     CD = [CD; max(FLEEPS_mtx.Lambdas.Lambda_q) / min(FLEEPS_mtx.Lambdas.Lambda_q)];
+%     fprintf('%e\n', sqrt(CD)); 
+    
     [FLEEPS_mtx.Q, FLEEPS_mtx.S, FLEEPS_mtx.P] = FLEEPS_Matrix_Q_S_P_simplify(wave_vec, Par_mesh.grid_num, FLEEPS_mtx.Lambdas, Par_material , FLEEPS_mtx.R, FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3);
     
-    fprintf('The weighted SVD of D has been completed\n')
+    % fprintf('The weighted SVD of D has been completed\n')
 
     % Construct function handles
     FLEEPS_fnchand = [];
@@ -31,46 +37,69 @@ function [ FLEEPS_mtx, FLEEPS_fnchand ] = FLEEPS_MtxFnchand_Generate(wave_vec, P
         case 'cpuArray'
         FLEEPS_fnchand = FLEEPS_Fnchandle_Manager( FLEEPS_fnchand, Nx, Ny, Nz, N, Par_material.material_type, Par_lattice.lattice_type, FLEEPS_mtx.B, FLEEPS_mtx.L, FLEEPS_mtx.R, FLEEPS_mtx.Q, FLEEPS_mtx.S, FLEEPS_mtx.P, FLEEPS_mtx.Lambdas, Par_linsys);
     end
-    
-    
-    %% test preconditioner for AMG and (W)SVD
-    for k = 1: 2
-        t_0 = cputime;
-        [FLEEPS_mtx_test.Q, FLEEPS_mtx_test.S, FLEEPS_mtx_test.P] = FLEEPS_Matrix_Q_S_P_simplify(wave_vec, Par_mesh.grid_num, FLEEPS_mtx.Lambdas, Par_material , FLEEPS_mtx.R, FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3);
-        t_svd(k) = cputime - t_0;
-    end
-    time_svd = mean(t_svd);
-    
-    t_1 = cputime;
-    % Construct function handles
-    FLEEPS_fnchand_test = [];
-    Nx = Par_mesh.grid_num(1); Ny = Par_mesh.grid_num(2); Nz = Par_mesh.grid_num(3);
-    N  = Par_mesh.grid_num(1)*Par_mesh.grid_num(2)*Par_mesh.grid_num(3);
-    FLEEPS_fnchand_test = FLEEPS_Fnchandle_Manager( FLEEPS_fnchand_test, Nx, Ny, Nz, N, Par_material.material_type, Par_lattice.lattice_type, FLEEPS_mtx.B, FLEEPS_mtx.L, FLEEPS_mtx.R, FLEEPS_mtx_test.Q, FLEEPS_mtx_test.S, FLEEPS_mtx_test.P, FLEEPS_mtx.Lambdas, Par_linsys);
-    
-    ze = sparse(N, N);
-    D = [blkdiag(FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3), ...
-        [ze, -FLEEPS_mtx.C_3', -FLEEPS_mtx.C_2'; ...
-        -FLEEPS_mtx.C_3', ze, -FLEEPS_mtx.C_1'; ...
-        -FLEEPS_mtx.C_2', -FLEEPS_mtx.C_1', ze] ];
-    A =  D * FLEEPS_mtx.L * D' ;
-    A = (A + A')/2;
-    b = ones(3 * N, 1);
-    [FLEEPS_mtx_test.CG_cpu_time, FLEEPS_mtx_test.CG_err, FLEEPS_mtx_test.CG_iter] = CG_iter( b, FLEEPS_fnchand_test.Qs_invS,  FLEEPS_fnchand_test.S_Q,  FLEEPS_fnchand_test.PLP);
-    FLEEPS_mtx_test.CG_cpu_time = cputime - t_1;
-    
-   start_agmg_pre= tic;
-   agmg(A,b,1,[], [], [], [], 1); 
-   FLEEPS_mtx_test.time_agmg_pre = toc( start_agmg_pre);
-
-   start_agmg= tic;
-   [~,~,~,FLEEPS_mtx_test.iter_agmg, ~]=agmg(A,b,1,Par_linsys.tolerence, Par_linsys.itmax, 1, [], 100);
-   FLEEPS_mtx_test.FLEEPS_mtx_test.time_agmg = toc( start_agmg);
-
-   FLEEPS_mtx_test.agmg_CG_cpu_time = FLEEPS_mtx_test.FLEEPS_mtx_test.time_agmg - FLEEPS_mtx_test.time_agmg_pre;
-
-    LS_info = [FLEEPS_mtx_test.iter_agmg, FLEEPS_mtx_test.agmg_CG_cpu_time, FLEEPS_mtx_test.time_agmg_pre,  FLEEPS_mtx_test.CG_iter, FLEEPS_mtx_test.CG_cpu_time, time_svd];
-    writematrix(LS_info, 'LS_info.txt');
+%     
+%     
+%     % test preconditioner for AMG and (W)SVD
+%     for k = 1: 1
+%         t_0 = cputime;
+%         [FLEEPS_mtx_test.Q, FLEEPS_mtx_test.S, FLEEPS_mtx_test.P] = FLEEPS_Matrix_Q_S_P_simplify_WSVD(wave_vec, Par_mesh.grid_num, FLEEPS_mtx.Lambdas, Par_material , FLEEPS_mtx.R, FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3);
+%         t_svd(k) = cputime - t_0;
+%     end
+%     time_svd = mean(t_svd);
+%     
+%     t_1 = cputime;
+%     % Construct function handles
+%     FLEEPS_fnchand_test = [];
+%     Nx = Par_mesh.grid_num(1); Ny = Par_mesh.grid_num(2); Nz = Par_mesh.grid_num(3);
+%     N  = Par_mesh.grid_num(1)*Par_mesh.grid_num(2)*Par_mesh.grid_num(3);
+%     FLEEPS_fnchand_test = FLEEPS_Fnchandle_Manager( FLEEPS_fnchand_test, Nx, Ny, Nz, N, Par_material.material_type, Par_lattice.lattice_type, FLEEPS_mtx.B, FLEEPS_mtx.L, FLEEPS_mtx.R, FLEEPS_mtx_test.Q, FLEEPS_mtx_test.S, FLEEPS_mtx_test.P, FLEEPS_mtx.Lambdas, Par_linsys);
+%     
+% %     ze = sparse(N, N);
+% %     D = [blkdiag(FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3), ...
+% %         [ze, -FLEEPS_mtx.C_3', -FLEEPS_mtx.C_2'; ...
+% %         -FLEEPS_mtx.C_3', ze, -FLEEPS_mtx.C_1'; ...
+% %         -FLEEPS_mtx.C_2', -FLEEPS_mtx.C_1', ze] ];
+% %     A =  D * FLEEPS_mtx.L * D' ;
+% %     A = (A + A')/2;
+%     b = ones(3 * N, 1);
+%     [FLEEPS_mtx_test.CG_cpu_time, FLEEPS_mtx_test.CG_err, FLEEPS_mtx_test.CG_iter] = CG_iter( b, FLEEPS_fnchand_test.Qs_invS,  FLEEPS_fnchand_test.S_Q,  FLEEPS_fnchand_test.PLP);
+%     FLEEPS_mtx_test.CG_cpu_time = cputime - t_1;
+%     
+% 
+%     tmp_LS_info_WSVD = [FLEEPS_mtx_test.CG_iter, FLEEPS_mtx_test.CG_cpu_time, time_svd];
+%     LS_info_WSVD = [LS_info_WSVD; tmp_LS_info_WSVD];
+%     
+%     
+%     
+%     for k = 1: 1
+%         t_0 = cputime;
+%         [FLEEPS_mtx_test.Q, FLEEPS_mtx_test.S, FLEEPS_mtx_test.P] = FLEEPS_Matrix_Q_S_P_simplify_SVD(wave_vec, Par_mesh.grid_num, FLEEPS_mtx.Lambdas, Par_material , FLEEPS_mtx.R, FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3);
+%         t_svd(k) = cputime - t_0;
+%     end
+%     time_svd = mean(t_svd);
+%     
+%     t_1 = cputime;
+%     % Construct function handles
+%     FLEEPS_fnchand_test = [];
+%     Nx = Par_mesh.grid_num(1); Ny = Par_mesh.grid_num(2); Nz = Par_mesh.grid_num(3);
+%     N  = Par_mesh.grid_num(1)*Par_mesh.grid_num(2)*Par_mesh.grid_num(3);
+%     FLEEPS_fnchand_test = FLEEPS_Fnchandle_Manager( FLEEPS_fnchand_test, Nx, Ny, Nz, N, Par_material.material_type, Par_lattice.lattice_type, FLEEPS_mtx.B, FLEEPS_mtx.L, FLEEPS_mtx.R, FLEEPS_mtx_test.Q, FLEEPS_mtx_test.S, FLEEPS_mtx_test.P, FLEEPS_mtx.Lambdas, Par_linsys);
+%     
+% %     ze = sparse(N, N);
+% %     D = [blkdiag(FLEEPS_mtx.C_1, FLEEPS_mtx.C_2, FLEEPS_mtx.C_3), ...
+% %         [ze, -FLEEPS_mtx.C_3', -FLEEPS_mtx.C_2'; ...
+% %         -FLEEPS_mtx.C_3', ze, -FLEEPS_mtx.C_1'; ...
+% %         -FLEEPS_mtx.C_2', -FLEEPS_mtx.C_1', ze] ];
+% %     A =  D * FLEEPS_mtx.L * D' ;
+% %     A = (A + A')/2;
+%     b = ones(3 * N, 1);
+%     [FLEEPS_mtx_test.CG_cpu_time, FLEEPS_mtx_test.CG_err, FLEEPS_mtx_test.CG_iter] = CG_iter( b, FLEEPS_fnchand_test.Qs_invS,  FLEEPS_fnchand_test.S_Q,  FLEEPS_fnchand_test.PLP);
+%     FLEEPS_mtx_test.CG_cpu_time = cputime - t_1;
+%     
+% 
+%     tmp_LS_info_SVD = [FLEEPS_mtx_test.CG_iter, FLEEPS_mtx_test.CG_cpu_time, time_svd];
+%     LS_info_SVD = [LS_info_SVD; tmp_LS_info_SVD];
+%     % writematrix(LS_info, 'LS_info_SVD.txt');
 end
 
 
