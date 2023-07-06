@@ -2,7 +2,7 @@ clear
 clc
 close all
 
-lattice = 'SC'; %'FCC', 'SC', 'HEX'
+lattice = 'FCC'; %'FCC', 'SC', 'HEX'
 switch lattice
     case 'FCC'
         path_string = 'GXWKGLUWLK';
@@ -22,6 +22,10 @@ for i = 1 : wave_vec_num
     tmp = comput_info.LS_iter{1, i};
     tmp = tmp(find(tmp > 0)); 
     es_iter_SVD(i) = length(tmp);
+    if es_iter_SVD(i) > 200
+        % Compute the actual eigs iteration for the expicit deflation for Gamma point 
+        es_iter_SVD(i) = es_iter_SVD(i) / 4;
+    end
     ls_iter_SVD(i) = mean(tmp);
 end
 
@@ -34,6 +38,10 @@ for i = 1 : wave_vec_num
     tmp = comput_info.LS_iter{1, i};
     tmp = tmp(find(tmp > 0)); 
     es_iter_WSVD(i) = length(tmp);
+    if es_iter_WSVD(i) > 200
+        % Compute the actual eigs iteration for the expicit deflation for Gamma point 
+        es_iter_WSVD(i) = es_iter_WSVD(i) / 4;
+    end
     ls_iter_WSVD(i) = mean(tmp);
 end
 
@@ -96,7 +104,7 @@ plot(hax2, XData, YData2(1 : length(XData)), 'bd', 'MarkerSize', 5, 'LineWidth',
 set(hax2, 'FontSize', 14);
 set(hax2, 'XTick', XData(vertex_idx));
 set(hax2, 'XTickLabel', upper(label_symbol_array));  
-axis(hax2, [min(XData), max(XData), 0.6*max(mink(YData1, 3)), 1.2*min(maxk(YData2, 3))]);
+axis(hax2, [min(XData), max(XData), 0.6*min(YData1), 1.2*max(YData2)]);
 grid(hax2, 'on');
 ylabel('#iter(eigs)');
 
