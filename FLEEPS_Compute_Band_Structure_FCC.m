@@ -8,7 +8,7 @@ close all
 addpath(genpath('PACKAGE/'));
 
 %% Mesh setting
-Popt.mesh.grid_num = [60,60,60]; % The grid numbers
+Popt.mesh.grid_num = [6,6,6]; % The grid numbers
 %% Lattice settings
 Popt.lattice.lattice_type     = 'user_defined';
 Popt.lattice.settingformat{1} = 'Material Data';
