@@ -1,11 +1,11 @@
 # FLEEPS-MATLAB
-The goal of FLEEPS-MATLAB is to solve the energy band of phononic crystal and get the accurate information of its energy band as soon as possible. 
+FLEEPS-MATLAB is an efficient band structure solver for 3D phononic crystals. The numerical method of FLEEPS-MATLAB is introduced in the manuscript "Fast SVD-Based Linear Elastic Eigenvalue Problem Solver for Band Structures of 3D Phononic Crystals".
 
 # Installation
 Download FLEEPS-MATLAB from Github.
 
 # Introduction
-Information of linear system in this paper can be found in "DATA/".
+Relevant data in this paper can be found in "DATA/".
 
 # Operating Instructions:
 (1)  First, open FLEEPS_Compute_BandStructure_XXX.m to set your parameters.  
@@ -17,7 +17,7 @@ Popt.lattice.settingformat{1}: default;
 Popt.material.periodic_judge: default;  
 Popt.material.display_material: Set whether to output material information( on/off );  
 Popt.material.display_grid: Set whether to output mesh information( on/off);  
-Popt.material.data_name: Set the lattice material, you can choose any one in \PACKAGE \FLEEPS_Material \FLEEPS_Material_Locate_Parameter;  
+Popt.material.data_name: Set the lattice material, you can choose any one in \PACKAGE \FLEEPS_Material_Locate_Parameter.m;  
 Popt.material.sphere_radius: Set the radius of the ball;  
 Popt.material.cylinder_radius: default;  
 Popt.material.material_type: default;  
@@ -42,8 +42,8 @@ Popt.FLEEPS_option.core_type: default.
 
 (2) Then just run FLEEPS_Compute_BandStructure_XXX.m to compute the band structure.  
 
-(3) Use FLEEPS_Plot_LS_Info_XXX.m to plot the information of linear system of FLEEPS.  
-     The relevant codes for performance comparison between AMG and (W)SVD can be found in PACKAGES/FLEEPS_MtxFnchand_Generate.m (line 36 -- line 64).
+(3) Use FLEEPS_Plot_XXX.m to plot the performance of FLEEPS.  
+     
 
 # Support:
 If you have any questions, please let us know, we are willing to help you.  
